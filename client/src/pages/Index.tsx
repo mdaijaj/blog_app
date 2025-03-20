@@ -19,6 +19,7 @@ const Index: React.FC = () => {
         method: 'get',
         credentials: 'include'
     })
+    console.log("testing...", blogData)
    
     if (loading) return <Loading />
     return (

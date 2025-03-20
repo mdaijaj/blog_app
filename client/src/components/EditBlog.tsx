@@ -15,9 +15,6 @@ import {
 
 import 'ckeditor5/ckeditor5.css';
 
-/**
- * Create a free account with a trial: https://portal.ckeditor.com/checkout?plan=free
- */
 const LICENSE_KEY = 'GPL'; // or <YOUR_LICENSE_KEY>.
 
 interface EditorProps {
@@ -71,9 +68,9 @@ export default function Editor({ props }: EditorProps) {
                     ImageUpload,
                     MediaEmbed,
                     Paragraph
-                ], 
-                placeholder: 'Type your content here!',
-                initialData: typeof props?.initialData === 'string' ? props.initialData : '', // Validate initialData
+                ],
+                placeholder: 'Type your content here!', 
+                initialData: typeof props?.initialData === 'string' ? props.initialData : '',
                 licenseKey: LICENSE_KEY
             }
         };
@@ -89,10 +86,7 @@ export default function Editor({ props }: EditorProps) {
                     <div ref={editorRef}>
                         {editorConfig && (
                             <CKEditor
-                                onChange={(event, editor) => {
-                                    const data = editor.getData(); 
-                                    props.onChange?.(data);
-                                }}
+                                onChange={props.onChange}
                                 onReady={editor => {
                                     const wordCount = editor.plugins.get('WordCount');
                                     editorWordCountRef.current.appendChild(wordCount.wordCountContainer);

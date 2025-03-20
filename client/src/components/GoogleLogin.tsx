@@ -1,58 +1,60 @@
-import React from 'react'
-import { Button } from './ui/button'
-import { FcGoogle } from "react-icons/fc";
-import { signInWithPopup } from 'firebase/auth';
-import { auth, provider } from '@/helpers/firebase';
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth, db } from "../helpers/firebase";
+import { toast } from "react-toastify";
 import { RouteIndex } from '@/helpers/RouteName';
+
+import { setDoc, doc } from "firebase/firestore";
 import { showToast } from '@/helpers/showToast';
-import { getEvn } from '@/helpers/getEnv';
-import { useNavigate } from 'react-router-dom';
+
+import { useNavigate } from "react-router-dom";
+import axios from "axios"; // Import axios for API calls
 import { useDispatch } from 'react-redux';
 import { setUser } from '@/redux/user/user.slice';
 
-const GoogleLogin: React.FC = () => {
-    const dispatch = useDispatch()
-    const navigate = useNavigate()
-    const handleLogin = async () => {
+function SignInwithGoogle() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch()
+
+  function googleLogin() {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider)
+    .then(async (result) => {
+      console.log("result", result);
+      const user = result.user;
+      if (result.user) {
+  
         try {
-            const googleResponse = await signInWithPopup(auth, provider)
-            console.log("googleResponse---" ,googleResponse)
-            const user = googleResponse.user
-            const bodyData = {
-                name: user.displayName,
-                email: user.email,
-                avatar: user.photoURL
-            }
-
-            console.log("googleResponse---" ,googleResponse)
-            const response = await fetch(`${getEvn('VITE_API_BASE_URL')}/auth/google-login`, {
-                method: 'post',
-                headers: { 'Content-type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(bodyData)
-            })
-
-            console.log("response---" ,response)
-            const data = await response.json()
-            console.log("data---" ,data)    
-            if (!response.ok) {
-                return showToast('error', data.message)
-            }
-            // Store token in local storage
-            localStorage.setItem('token', data.token)
-            dispatch(setUser(data.user))
-            navigate(RouteIndex)
-            showToast('danger', data.message)
+            const data = await axios.post("http://localhost:3000/api/auth/google_login", {
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName,
+            photo: user.photoURL,
+          });
+          console.log("data", data);
+          console.log(result.user, "kkkk")
+          localStorage.setItem('token', result.user.accessToken)
+          dispatch(setUser(data.data.user))
+          navigate(RouteIndex)
+          showToast('success', data.message)
         } catch (error) {
-            showToast('error', error.message)
+          console.error("API call failed:", error);
+          toast.error("Failed to log in. Please try again.", {
+            position: "top-center",
+          });
         }
-    }
-    return (
-        <Button variant="outline" className="w-full" onClick={handleLogin} >
-            <FcGoogle />
-            Continue With Google
-        </Button>
-    )
+      } 
+    });
+  }
+  return (
+    <div>
+      <p className="continue-p">--Or continue with--</p>
+      <div
+        style={{ display: "flex", justifyContent: "center", cursor: "pointer" }}
+        onClick={googleLogin}
+      >
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTRY6k7FoxDp5rODuFyEIYpefjasfow1lC1Fg&s" width={"60%"} />
+      </div>
+    </div>
+  );
 }
-
-export default GoogleLogin
+export default SignInwithGoogle;

@@ -33,7 +33,7 @@ app.use('/api/blog-like', BlogLikeRoute)
 
 
 
-mongoose.connect(process.env.MONGODB_CONN, { dbName: 'blog' })
+mongoose.connect("mongodb://localhost:27017/blog", { dbName: 'blog' })
     .then(() => console.log('Database connected.'))
     .catch(err => console.log('Database connection failed.', err))
 

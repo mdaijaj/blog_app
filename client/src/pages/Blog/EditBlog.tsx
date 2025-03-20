@@ -9,14 +9,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import slugify from 'slugify'
 import { showToast } from '@/helpers/showToast'
 import { getEvn } from '@/helpers/getEnv'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/selection"; 
-
 import { useFetch } from '@/hooks/useFetch'
 import Dropzone from 'react-dropzone'
 import Editor from '@/components/Editor'
@@ -84,17 +76,19 @@ const EditBlog: React.FC = () => {
 
     useEffect(() => {
         if (blogData) {
-            setPreview(blogData.blog.featuredImage)
-            form.setValue('category', blogData.blog.category._id)
-            form.setValue('title', blogData.blog.title)
-            form.setValue('slug', blogData.blog.slug)
-            form.setValue('blogContent', decode(blogData.blog.blogContent))
+            setPreview(blogData.blog.featuredImage);
+            form.setValue('category', blogData.blog.category._id);
+            form.setValue('title', blogData.blog.title);
+            form.setValue('slug', blogData.blog.slug);
+            form.setValue('blogContent', decode(blogData.blog.blogContent));
         }
-    }, [blogData])
+    }, [blogData]);
+
+
 
     const handleEditorData = (data: string) => {
         form.setValue("blogContent", data, { shouldValidate: true });
-      };
+    };
 
     const blogTitle = form.watch('title')
 
@@ -107,28 +101,34 @@ const EditBlog: React.FC = () => {
 
     async function onSubmit(values: any) {
         try {
-            const formData = new FormData()
-            if (file) formData.append('file', file)
-            formData.append('data', JSON.stringify(values))
+            const formData = new FormData();
+            if (file) formData.append('file', file);
+            formData.append('data', JSON.stringify({
+                ...values,
+                category: values.category
+            }));
 
             const response = await fetch(`${getEvn('VITE_API_BASE_URL')}/blog/update/${blogid}`, {
-                method: 'put',
+                method: 'PUT',
                 credentials: 'include',
                 body: formData
-            })
-            const data = await response.json()
+            });
+
+            const data = await response.json();
             if (!response.ok) {
-                return showToast('error', data.message)
+                return showToast('error', data.message);
             }
-            form.reset()
-            setFile(undefined)
-            setPreview(undefined)
-            navigate(RouteBlog)
-            showToast('success', data.message)
+
+            form.reset();
+            setFile(undefined);
+            setPreview(undefined);
+            navigate(RouteBlog);
+            showToast('success', data.message);
         } catch (error: any) {
-            showToast('error', error.message)
+            showToast('error', error.message);
         }
     }
+
 
     const handleFileSelection = (files: File[]) => {
         const file = files[0]
@@ -145,7 +145,8 @@ const EditBlog: React.FC = () => {
                     <h1 className='text-2xl font-bold mb-4'>Edit Blog</h1>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)}  >
-                            <div className='mb-3'>
+                            <div className="mb-3">
+
                                 <FormField
                                     control={form.control}
                                     name="category"
@@ -153,16 +154,22 @@ const EditBlog: React.FC = () => {
                                         <FormItem>
                                             <FormLabel>Category</FormLabel>
                                             <FormControl>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <SelectTrigger  >
-                                                        <SelectValue placeholder="Select" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {categoryData && categoryData.category.length > 0 &&
-                                                            categoryData.category.map(category => <SelectItem key={category._id} value={category._id}>{category.name}</SelectItem>)
-                                                        }
-                                                    </SelectContent>
-                                                </Select>
+                                                <select
+                                                    className="w-full border rounded px-3 py-2"
+                                                    value={field.value}
+                                                    onChange={(e) => field.onChange(e.target.value)}
+                                                >
+                                                    <option value="" disabled>Select a category</option>
+                                                    {categoryData?.category?.length > 0 ? (
+                                                        categoryData.category.map((category) => (
+                                                            <option key={category._id} value={category._id.toString()}>
+                                                                {category.name}
+                                                            </option>
+                                                        ))
+                                                    ) : (
+                                                        <option disabled>No categories available</option>
+                                                    )}
+                                                </select>
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>

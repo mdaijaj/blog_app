@@ -6,38 +6,40 @@ import Category from "../models/category.model.js"
 
 export const addBlog = async (req, res, next) => {
     try {
-        const data = JSON.parse(req.body.data)
+        console.log(req.user, req.user._id)
         let featuredImage = ''
         if (req.file) {
 
             // Upload an image
-            const uploadResult = await cloudinary.uploader
+            let uploadResult = await cloudinary.uploader
                 .upload(
                     req.file.path,
-                    { folder: 'yt-mern-blog', resource_type: 'auto' }
+                    { folder: 'blog_post', resource_type: 'auto' }
                 )
                 .catch((error) => {
                     next(handleError(500, error.message))
                 });
-
+            console.log("uploadResult", uploadResult)
             featuredImage = uploadResult.secure_url
         }
-        
-        const blog = new Blog({
-            author: data.author,
-            category: data.category,
-            title: data.title,
-            slug: `${data.slug}-${Math.round(Math.random() * 100000)}`,
-            featuredImage: featuredImage,
-            blogContent: encode(data.blogContent),
-        })
 
+        let result= JSON.parse(req.body?.data)
+        console.log("result---", result)
+
+        const blog = new Blog({
+            author: req.user._id,
+            category: result.category,
+            title: result.title,
+            slug: `${result.slug}-${Math.round(Math.random() * 100000)}`,
+            featuredImage: featuredImage,
+            blogContent: encode(result.blogContent),
+        })
+        console.log("blog", blog)
         await blog.save()
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: 'Blog added successfully.'
         })
-
     } catch (error) {
         next(handleError(500, error.message))
     }
@@ -48,7 +50,7 @@ export const editBlog = async (req, res, next) => {
         const { blogid } = req.params
         const blog = await Blog.findById(blogid).populate('category', 'name')
         if (!blog) {
-            next(handleError(404, 'Data not found.'))
+            next(handleError(404, 'req.body not found.'))
         }
         res.status(200).json({
             blog

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import logo from '@/assets/images/logo-white.png'
 import { Button } from './ui/button'
 import { Link, useNavigate } from 'react-router-dom'
@@ -25,6 +25,8 @@ import { getEvn } from '@/helpers/getEnv';
 import { AiOutlineMenu } from "react-icons/ai";
 import { useSidebar } from './ui/sidebar';
 import { IoMdSearch } from "react-icons/io";
+import { auth } from '@/helpers/firebase'; // Import Firebase auth
+import { onAuthStateChanged } from 'firebase/auth'; // Import Firebase auth state listener
 
 const getTokenFromHeader = (req: any) => {
     return req.headers['access_token'];
@@ -36,28 +38,38 @@ const Topbar: React.FC = () => {
     const dispatch = useDispatch()
     const navigate = useNavigate()
     const user = useSelector((state: any) => state.user)
+    const [firebaseUser, setFirebaseUser] = useState<any>(null); // State to track Firebase user
+    const [loading, setLoading] = useState(true); // Add loading state
+
+    useEffect(() => {
+        // Listen to Firebase auth state changes
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                setFirebaseUser({
+                    name: currentUser.displayName,
+                    email: currentUser.email,
+                    avatar: currentUser.photoURL,
+                });
+            } else {
+                setFirebaseUser(null);
+            }
+            setLoading(false); // Set loading to false after auth state is resolved
+        });
+        return () => unsubscribe(); // Cleanup listener on unmount
+    }, []);
 
     const handleLogout = async () => {
         try {
-            const token = getTokenFromHeader({ headers: { 'access_token': 'your_token_here' } });
-            const response = await fetch(`${getEvn('VITE_API_BASE_URL')}/auth/logout`, {
-                method: 'get',
-                credentials: 'include',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            const data = await response.json()
-            if (!response.ok) {
-                return showToast('error', data.message)
-            }
-            dispatch(removeUser())
-            navigate(RouteIndex)
-            showToast('success', data.message)
+            const token = getTokenFromHeader({ headers: { 'access_token': localStorage.getItem('token') || '' } })
+            localStorage.removeItem('token'); // Remove token from localStorage
+            dispatch(removeUser());
+            setFirebaseUser(null); // Clear Firebase user state
+            navigate(RouteIndex);
+            showToast('danger', "Logout user successfully!");
         } catch (error) {
-            showToast('error', error.message)
+            showToast('error', error.message || 'An error occurred during logout');
         }
-    }
+    };
 
     const toggleSearch = () => {
         setShowSearch(!showSearch)
@@ -82,51 +94,56 @@ const Topbar: React.FC = () => {
                 <button onClick={toggleSearch} type='button' className='md:hidden block'>
                     <IoMdSearch size={25} />
                 </button>
-                {!user.isLoggedIn ?
-                    <Button asChild className="rounded-full">
-                        <Link to={RouteSignIn}  >
-                            <MdLogin />
-                            Sign In
-                        </Link>
-                    </Button>
-                    :
-                    <DropdownMenu>
-                        <DropdownMenuTrigger>
-                            <Avatar>
-                                <AvatarImage src={user.user.avatar || usericon} />
-                            </Avatar>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuLabel>
-                                <Link to={RouteIndex}>
-                                    <Avatar>
-                                        <AvatarImage src={user.user.avatar || usericon} />
-                                    </Avatar>
-                                    <p>{user.user.name}</p>
-                                </Link>
-                                <p className='text-sm'>{user.user.email}</p>
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild className="cursor-pointer">
-                                <Link to={RouteProfile}>
-                                    <FaRegUser />
-                                    Profile
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild className="cursor-pointer">
-                                <Link to={RouteBlogAdd}>
-                                    <FaPlus />
-                                    Create Blog
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                                <IoLogOutOutline color='red' />
-                                Logout
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                }
+                {loading ? null : ( 
+                    !user.isLoggedIn ? ( 
+                        <Button asChild className="rounded-full">
+                            <Link to={RouteSignIn}>
+                                <MdLogin />
+                                Sign In
+                            </Link>
+                        </Button>
+                    ) : (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger>
+                                <Avatar>
+                                    {console.log(user.user, "kkk")}
+                                <AvatarImage src={(user.user.avatar) || usericon || firebaseUser?.avatar} />
+                                </Avatar>
+                                <h2>{user?.user?.name}</h2>
+
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuLabel>
+                                    <Link to={RouteIndex}>
+                                        <Avatar>
+                                            <AvatarImage src={(firebaseUser?.avatar || user.user.avatar) || usericon} />
+                                        </Avatar>
+                                        <p>{firebaseUser?.name || user.user.name}</p>
+                                    </Link>
+                                    <p className='text-sm'>{firebaseUser?.email || user.user.email}</p>
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild className="cursor-pointer">
+                                    <Link to={RouteProfile}>
+                                        <FaRegUser />
+                                        Profile
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild className="cursor-pointer">
+                                    <Link to={RouteBlogAdd}>
+                                        <FaPlus />
+                                        Create Blog
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                                    <IoLogOutOutline color='red' />
+                                    Logout
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )
+                )}
             </div>
         </div>
     )
