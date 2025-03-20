@@ -20,6 +20,7 @@ describe('Auth Controller - Login (Passing Test Case)', () => {
       password: 'hashedPassword', // Simulated hashed password
     };
 
+    // Mock dependencies
     User.findOne.mockResolvedValue(mockUser); // Simulate finding user in DB
     bcryptjs.compare.mockResolvedValue(true); // Simulate correct password check
     jwt.sign.mockReturnValue('mockGeneratedToken'); // Simulate JWT generation
@@ -29,6 +30,9 @@ describe('Auth Controller - Login (Passing Test Case)', () => {
     const next = jest.fn();
 
     await Login(req, res, next);
+
+    // Debugging: Log the response
+    console.log('Response:', res.json.mock.calls);
 
     expect(res.status).toHaveBeenCalledWith(200); // Expect 200 response
     expect(res.json).toHaveBeenCalledWith({
@@ -45,5 +49,22 @@ describe('Auth Controller - Login (Passing Test Case)', () => {
       expect.any(String), // Secret key (mocked)
       { expiresIn: '1h' }
     );
+  });
+
+  it('should return 401 if credentials are invalid', async () => {
+    // Mock dependencies
+    User.findOne.mockResolvedValue(null); // Simulate user not found
+
+    const req = { body: { email: 'invalid@example.com', password: 'wrongpassword' } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    await Login(req, res, next);
+
+    // Debugging: Log the response
+    console.log('Response:', res.json.mock.calls);
+
+    expect(res.status).toHaveBeenCalledWith(401); // Ensure 401 status is returned
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Invalid credentials' }));
   });
 });

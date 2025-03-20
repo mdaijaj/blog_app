@@ -29,4 +29,15 @@ describe('Blog Controller - Add Blog', () => {
 
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'Database error' }));
   });
+
+  it('should return 400 if required fields are missing', async () => {
+    const req = { body: { title: 'Test Blog' } }; // Missing content and author
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    await addBlog(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400); // Ensure 400 status is returned
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Missing required fields' }));
+  });
 });
