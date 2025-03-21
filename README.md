@@ -88,10 +88,4 @@ npm test
 Swagger is integrated. Once the backend is running, visit:
 http://localhost:5000/api-docs
 
-📦 Deployment (Docker)
-🔹 Build & Run with Docker
-docker-compose up --build
-📌 GitHub Repository & Access
-🔗 GitHub Repository
-
 
